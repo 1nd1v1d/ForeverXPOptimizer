@@ -1,0 +1,13 @@
+## Interface: 16001
+## Title: Forever XP Optimizer
+## Notes-deDE: XP-Boni, Erinnerungen, aktive XP/Stunde und Levelzeiten mit separater AFK-Erfassung.
+## Notes: XP buffs, reminders, active XP/hour and level history with separate AFK tracking.
+## Author: daosm
+## Version: 0.1.0
+## SavedVariables: ForeverXPOptimizerDB
+## IconTexture: Interface\AddOns\ForeverXPOptimizer\Icon
+
+Data.lua
+Model.lua
+Client.lua
+UI.lua

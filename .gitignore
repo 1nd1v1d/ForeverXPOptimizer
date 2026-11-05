@@ -1,0 +1,8 @@
+.tools/
+dist/
+__pycache__/
+*.pyc
+.codebase-memory/
+.env
+.env.*
+!.env.example
