@@ -1,12 +1,32 @@
 ## Interface: 16001
 ## Title: Forever XP Optimizer
 ## Notes-deDE: XP-Boni, Erinnerungen, aktive XP/Stunde und Levelzeiten mit separater AFK-Erfassung.
+## Notes-frFR: Bonus XP, rappels, XP par heure active et temps par niveau avec suivi des absences.
+## Notes-esES: Beneficios de XP, avisos, XP por hora activa y tiempos por nivel con seguimiento de ausencias.
+## Notes-esMX: Beneficios de XP, avisos, XP por hora activa y tiempos por nivel con seguimiento de ausencias.
+## Notes-itIT: Bonus PE, avvisi, PE per ora attiva e tempi per livello con conteggio AFK separato.
+## Notes-ptBR: Bônus de EXP, lembretes, EXP por hora ativa e tempos por nível com ausências separadas.
+## Notes-ruRU: Бонусы опыта, напоминания, опыт за активный час и время уровней с отдельным учётом АФК.
+## Notes-koKR: 경험치 보너스, 알림, 활동 시간당 경험치 및 자리 비움 시간을 분리한 레벨별 기록.
+## Notes-zhCN: 经验加成、增益提醒、活跃每小时经验及等级用时，单独记录暂离时间。
+## Notes-zhTW: 經驗加成、增益提醒、活躍每小時經驗及等級用時，單獨記錄暫離時間。
 ## Notes: XP buffs, reminders, active XP/hour and level history with separate AFK tracking.
 ## Author: daosm
-## Version: 0.1.0
+## Version: 0.2.0
 ## SavedVariables: ForeverXPOptimizerDB
 ## IconTexture: Interface\AddOns\ForeverXPOptimizer\Icon
 
+Locale.lua
+Locales\enUS.lua
+Locales\deDE.lua
+Locales\frFR.lua
+Locales\esES.lua
+Locales\itIT.lua
+Locales\ptBR.lua
+Locales\ruRU.lua
+Locales\koKR.lua
+Locales\zhCN.lua
+Locales\zhTW.lua
 Data.lua
 Model.lua
 Client.lua

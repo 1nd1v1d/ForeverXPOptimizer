@@ -1,4 +1,5 @@
 local addonName, ns = ...
+local L = ns.L
 local M = ns.Model
 local C = { warnings = {}, foodSpells = {}, inventory = {}, diagnostic = {} }
 ns.Client = C
@@ -51,8 +52,13 @@ function C:ItemName(id)
     if name then
         return name
     end
+    self.requestedItemNames = self.requestedItemNames or {}
+    if not self.requestedItemNames[id] and C_Item and C_Item.RequestLoadItemDataByID then
+        self.requestedItemNames[id] = true
+        C.Call(C_Item.RequestLoadItemDataByID, id)
+    end
     local food = ns.foodByID[id]
-    return food and food.name or ("Item " .. id)
+    return ns.language == "enUS" and food and food.name or (L.ITEM_PREFIX .. id)
 end
 
 function C:Cooldown(id)
@@ -279,7 +285,7 @@ function C:Snapshot()
         sleepCooldown = self:Cooldown(211527),
         tentCooldown = self:Cooldown(279978),
         pendantCooldown = self:Cooldown(273049),
-        undeadTarget = creature == "Untoter" or creature == "Untote" or creature == "Undead",
+        undeadTarget = creature ~= nil and ns.undeadNames[creature] == true,
     }
 end
 
@@ -291,7 +297,7 @@ function C:Sample()
     local xp = number(C.Call(UnitXP, "player"))
     local maximum = number(C.Call(UnitXPMax, "player"))
     if not level or not xp or not maximum then
-        self.diagnostic.xp = "XP-Daten nicht lesbar"
+        self.diagnostic.xp = L.XP_UNREADABLE
         self.tracker:Advance(GetTime())
         return
     end
@@ -409,7 +415,7 @@ function C:ScanQuests()
                     end
                 end
                 result.rows[#result.rows + 1] =
-                    { id = id, xp = reward, title = C.Field(info, "title") or ("Quest " .. id) }
+                    { id = id, xp = reward, title = C.Field(info, "title") or (L.QUEST_PREFIX .. id) }
             elseif ready == nil then
                 result.unknown = result.unknown + 1
             end
@@ -425,7 +431,7 @@ function C:Start()
     local _, build, _, interface = GetBuildInfo()
     self.build, self.interface = build, interface
     if interface < 16000 or interface >= 17000 then
-        self:Print("Für WoW Forever entwickelt (Interface 16001). Dieser Client wird nicht unterstützt.")
+        self:Print(L.UNSUPPORTED)
         return
     end
     ForeverXPOptimizerDB = ForeverXPOptimizerDB or {}
@@ -439,7 +445,7 @@ function C:Start()
     self.options = db.options
     local id = C.Call(UnitGUID, "player")
     if not id then
-        self:Print("Charakter-ID nicht lesbar; bitte /reload außerhalb des Kampfes.")
+        self:Print(L.NO_GUID)
         return
     end
     db.characters[id] = db.characters[id] or {}
@@ -468,7 +474,7 @@ function C:Start()
     ns.UI:Create()
     self:RequestPlayed()
     self:Refresh()
-    self:Print("v" .. ns.VERSION .. " geladen. /fxp öffnet die Übersicht, /fxp hilfe zeigt Befehle.")
+    self:Print("v" .. ns.VERSION .. L.LOADED)
 end
 
 function C:Command(input)
@@ -489,8 +495,8 @@ function C:Command(input)
     elseif command == "neu" or command == "reset" then
         self.character.session = M.NewCounters()
         self.tracker:ResetRate()
-        self:Print("Sitzungsrate und Sitzungszähler neu gestartet; Levelverlauf bleibt erhalten.")
-    elseif command == "ton" then
+        self:Print(L.SESSION_RESET)
+    elseif command == "ton" or command == "sound" then
         self.options.sound = not self.options.sound
     elseif command == "scale" and tonumber(value) then
         self.options.scale = math.max(0.65, math.min(1.6, tonumber(value)))
@@ -502,23 +508,23 @@ function C:Command(input)
         self.options.expanded = true
     elseif command == "live" then
         ns.UI.preview = nil
-    elseif command == "quelle" then
+    elseif command == "quelle" or command == "source" then
         for _, source in ipairs(ns.sources) do
             if source.key == value then
                 self.options.enabled[value] = self.options.enabled[value] == false
                 self:Print(
-                    source.name .. (self.options.enabled[value] and " eingeschaltet." or " abgeschaltet.")
+                    source.name .. (self.options.enabled[value] and L.ENABLED_SUFFIX or L.DISABLED_SUFFIX)
                 )
             end
         end
-    elseif command == "diagnose" then
+    elseif command == "diagnose" or command == "status" then
         self:Print(
             string.format(
-                "Build %s · Interface %s · Auren %s · XP %s · Lernzuordnungen %d",
+                L.DIAGNOSTICS,
                 tostring(self.build),
                 tostring(self.interface),
-                self.snapshot.auraReadable and "lesbar" or "eingeschränkt",
-                self.diagnostic.xp or "lesbar",
+                self.snapshot.auraReadable and L.READABLE or L.RESTRICTED,
+                self.diagnostic.xp or L.READABLE,
                 ns.UI:LearnedCount()
             )
         )
@@ -528,12 +534,8 @@ function C:Command(input)
         ns.UI.frame:ClearAllPoints()
         ns.UI.frame:SetPoint("CENTER", UIParent, "CENTER", 260, 0)
     else
-        self:Print(
-            "/fxp · hide · pause · neu · ton · scale 1 · warn 60 · level 14 · live · diagnose · position"
-        )
-        self:Print(
-            "/fxp quelle food|sleep|rested|tent|pendant|legacy schaltet eine Quelle um. Details: Rechtsklick auf das Fenster."
-        )
+        self:Print(L.COMMANDS)
+        self:Print(L.COMMAND_SOURCE)
     end
     self:Refresh()
 end

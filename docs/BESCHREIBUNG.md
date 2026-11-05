@@ -2,7 +2,7 @@
 
 ## Kurzbeschreibung
 
-WoW-Forever-Addon mit XP-Buff-Erinnerungen, aktiver XP/Stunde, separater AFK-Erfassung, Levelzeiten und Vorschau für abgabefertige Quest-XP.
+Sieh auf einen Blick, welche XP-Booster dir auf deiner Stufe fehlen, und erhalte Erinnerungen an auslaufende Buffs – mit aktivem XP-Tracker und Quest-XP-Vorschau.
 
 ## Projektbeschreibung
 
@@ -14,10 +14,12 @@ Der integrierte Tracker zeigt Gesamtspielzeit, Sitzungszeit, Spielzeit pro Level
 
 Bereits erledigte Quests sind als goldene Vorschau auf der XP-Leiste sichtbar. Du siehst ihre bekannte XP-Summe und welches Level samt Fortschritt du bei sofortiger Abgabe erreichen würdest. Auch mehrere mögliche Stufenaufstiege werden berücksichtigt. Die vorgemerkten Quest-XP zählen erst nach der tatsächlichen Abgabe zur gemessenen Levelgeschwindigkeit.
 
-Die deutsche Oberfläche kommt ohne erforderliche Zusatzaddons aus. Position, Größe, Vorwarnzeit und Hinweiston sind anpassbar. Mit `/fxp` öffnest du die Anzeige; per Rechtsklick erreichst du Details und den Levelverlauf.
+Die Oberfläche passt sich automatisch der WoW-Textsprache an: Deutsch, Englisch, Französisch, Spanisch, Italienisch, Portugiesisch, Russisch, Koreanisch sowie vereinfachtes und traditionelles Chinesisch. Regionale Varianten verwenden die gemeinsame Basissprache, Englisch dient als Fallback. Es sind keine Zusatzaddons oder Übersetzungsdienste nötig. Position, Größe, Vorwarnzeit und Hinweiston sind anpassbar. Mit `/fxp` öffnest du die Anzeige; per Rechtsklick erreichst du Details und den Levelverlauf.
 
 ## Aktueller Entwicklungsstand
 
-Erste Version für den offiziellen WoW-Forever-Client, Interface 16001. Mit Lua 5.1, 24 Regeltests und einem Testlauf für Ereignisanbindung und Oberfläche automatisch geprüft. Ein angemeldeter Ingame-Test steht noch aus.
+Version 0.2.0 für den offiziellen WoW-Forever-Client 1.60.1, Interface 16001. Mit Lua 5.1, 24 Regeltests, Übersetzungsprüfungen und vollständigen Ereignis-/UI-Testläufen für alle unterstützten Sprachen, regionale Aliasse und Englisch-Fallback automatisch geprüft. Ein angemeldeter Ingame-Test und eine muttersprachliche Prüfung aller Übersetzungen stehen noch aus.
+
+Die englische Fassung für die CurseForge-Projektseite steht in [CURSEFORGE.md](CURSEFORGE.md).
 
 Bei eingeschränkten Aura-Daten meldet das Addon einen unbekannten Status. Legacy-Vorteile werden erläutert; ihre gewählten Ränge werden im Spielmenü geprüft. Questprognosen verwenden die aktuellen Client-Belohnungen und können sich mit Buffs, Level oder Abgabereihenfolge ändern. Historische AFK-Zeiten vor Beginn der Aufzeichnung werden nicht nachträglich geschätzt.

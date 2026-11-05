@@ -1,10 +1,54 @@
 -- Smoke-test the real event adapter and real UI under a small WoW API harness.
 -- API tables intentionally expose modern C_* functions, not old Classic globals.
 local ns = {}
+GetLocale = function()
+    return TEST_LOCALE or "deDE"
+end
 local now, afk, combat, restricted, dead = 100, false, false, false, false
 local level, xp, maximum = 20, 100, 23200
 local auras, messages, frames = {}, {}, {}
 local ready, missingReward, loadRequests = true, true, 0
+local undeadTarget, extraFood = false, false
+local locale = TEST_LOCALE or "deDE"
+local aliases = { enGB = "enUS", esMX = "esES", ptPT = "ptBR" }
+local language = aliases[locale] or locale
+local nativeUndead = {
+    enUS = "Undead",
+    deDE = "Untoter",
+    frFR = "Mort-vivant",
+    esES = "No-muerto",
+    itIT = "Non Morto",
+    ptBR = "Morto-vivo",
+    ruRU = "Нежить",
+    koKR = "언데드",
+    zhCN = "亡灵",
+    zhTW = "不死族",
+}
+local nativeFood = {
+    enUS = "Well Fed",
+    deDE = "Satt",
+    frFR = "Bien nourri",
+    esES = "Bien alimentado",
+    itIT = "Sazio",
+    ptBR = "Bem Alimentado",
+    ruRU = "Сытость",
+    koKR = "포만감",
+    zhCN = "进食充分",
+    zhTW = "充分進食",
+}
+local tooltipXP = {
+    enUS = "Experience from kills increased by 5%.",
+    deDE = "Erfahrung durch Kills um 5% erhöht.",
+    frFR = "Expérience gagnée augmentée de 5 %.",
+    esES = "Experiencia aumentada un 5%.",
+    itIT = "Esperienza aumentata del 5%.",
+    ptBR = "Experiência aumentada em 5%.",
+    ruRU = "Получаемый опыт увеличен на 5%.",
+    koKR = "경험치 획득량이 5%만큼 증가합니다.",
+    zhCN = "获得的经验提高5%。",
+    zhTW = "獲得的經驗提高5%。",
+}
+local foodName = nativeFood[language] or nativeFood.enUS
 local function noop() end
 local methods = {}
 function methods:SetScript(key, fn)
@@ -105,7 +149,7 @@ function GetInventoryItemID()
     return nil
 end
 function UnitCreatureType()
-    return "Humanoid"
+    return undeadTarget and (nativeUndead[language] or "Undead") or "Humanoid"
 end
 function RequestTimePlayed() end
 function PlaySound() end
@@ -147,20 +191,23 @@ C_Item = {
 }
 C_Container = {
     GetContainerNumSlots = function(bag)
-        return bag == 0 and 1 or 0
+        return bag == 0 and (extraFood and 2 or 1) or 0
     end,
-    GetContainerItemInfo = function()
+    GetContainerItemInfo = function(_, slot)
+        if slot == 2 then
+            return { itemID = 77777, stackCount = 2 }
+        end
         return { itemID = 6888, stackCount = 8 }
     end,
 }
 C_Spell = {
     GetSpellName = function(id)
-        return id == 1249519 and "Satt" or "Lagerzelt"
+        return id == 1249519 and foodName or ("NativeTent-" .. locale)
     end,
 }
 C_TooltipInfo = {
     GetItemByID = function()
-        return { lines = { { leftText = "5% mehr Erfahrung" } } }
+        return { lines = { { leftText = tooltipXP[language] or tooltipXP.enUS } } }
     end,
 }
 
@@ -193,14 +240,26 @@ function GetQuestLogRewardXP(id)
     return id == 100 and 300 or 500
 end
 
-for _, file in ipairs({ "Data", "Model", "Client", "UI" }) do
-    assert(loadfile(PROJECT_ROOT .. "/ForeverXPOptimizer/" .. file .. ".lua"))("ForeverXPOptimizer", ns)
+for line in io.lines(PROJECT_ROOT .. "/ForeverXPOptimizer/ForeverXPOptimizer.toc") do
+    if line:match("%.lua%s*$") then
+        local file = line:gsub("\\", "/"):gsub("%s+$", "")
+        assert(loadfile(PROJECT_ROOT .. "/ForeverXPOptimizer/" .. file))("ForeverXPOptimizer", ns)
+    end
 end
 local C = ns.Client
 local dispatch = C.frame.scripts.OnEvent
 dispatch(C.frame, "PLAYER_ENTERING_WORLD", true, false)
 assert(C.tracker and ns.UI.frame, "Login creates model and real UI")
 assert(C.foodCount == 8, "Taschenbestand")
+assert(ns.UI.levelTime.text:find(ns.L.LEVEL_TIME, 1, true) == 1, "client-language heading")
+undeadTarget = true
+assert(C:Snapshot().undeadTarget == true, "localized undead detection: " .. locale)
+undeadTarget = false
+extraFood = true
+C:ScanInventory()
+assert(C.foodCount == 10, "localized XP tooltip detects new food: " .. locale)
+extraFood = false
+C:ScanInventory()
 assert(C.snapshot.rested == 0, "documented nil exhausted rested")
 assert(
     C.quests.xp == 300 and C.quests.count == 2 and C.quests.unknown == 1,
@@ -242,17 +301,17 @@ restricted = true
 C:Refresh()
 assert(C.states[1].kind == "unknown", "secrecy produces unknown")
 restricted = false
-auras = { { spellId = 1249519, name = "Satt", expirationTime = now + 900, applications = 1 } }
+auras = { { spellId = 1249519, name = foodName, expirationTime = now + 900, applications = 1 } }
 C:Refresh()
 assert(C.states[1].kind == "active", "verified visible stat aura")
-auras = { { spellId = 99999, name = "Satt", expirationTime = now + 900, applications = 1 } }
+auras = { { spellId = 99999, name = foodName, expirationTime = now + 900, applications = 1 } }
 C:Refresh()
 assert(C.states[1].kind == "unknown", "unverified Well Fed not blindly accepted")
 auras = {}
 C:Refresh()
 dispatch(C.frame, "UNIT_SPELLCAST_SUCCEEDED", "player", "cast", 1248377)
 now = now + 10
-auras = { { spellId = 88888, name = "Satt", expirationTime = now + 900, applications = 1 } }
+auras = { { spellId = 88888, name = foodName, expirationTime = now + 900, applications = 1 } }
 C:Refresh()
 assert(C.character.learnedFoods[88888], "live learning from verified food")
 assert(C.states[1].kind == "active")
@@ -260,10 +319,17 @@ C:Command("pause")
 assert(C.tracker.mode == "paused")
 C:Command("pause")
 assert(C.tracker.mode == "active")
+C:Command("sound")
+assert(C.options.sound == true, "English sound command")
+C:Command("ton")
+assert(C.options.sound == false, "German command stays compatible")
 C:Command("quelle food")
 assert(C.states[1].kind == "ignored")
 C:Command("quelle food")
 assert(C.states[1].kind == "active")
+C:Command("source food")
+assert(C.states[1].kind == "ignored", "English source command")
+C:Command("source food")
 C:Command("level 14")
 assert(ns.UI.preview == 14)
 C:Command("live")
@@ -293,4 +359,4 @@ C:Sample()
 assert(C.character.session.xp == 23050, "duplicate level/XP event")
 dispatch(C.frame, "PLAYER_LOGOUT")
 assert(C.character.reloadPending)
-print("Client/UI smoke test passed (login, events, secrecy, learning, AFK, commands, persistence)")
+print("Client/UI smoke test passed: " .. locale)

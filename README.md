@@ -13,7 +13,7 @@ Forever XP Optimizer verbindet eine kompakte XP-Leiste mit Buff-Erinnerungen und
 - **Quest-XP vorausplanen:** Goldene Vorschau für abgabefertige Quests, einschließlich möglicher Stufenaufstiege.
 - **Aktive Levelgeschwindigkeit:** XP/Stunde über die letzten 15 aktiven Minuten und geschätzte Zeit bis zum nächsten Level.
 - **Spielzeiten nachvollziehen:** Gesamtspielzeit, Sitzung, Zeit pro Level und gespeicherter Verlauf mit eigener AFK-Erfassung.
-- **Schlanke Installation:** Deutsche Oberfläche, verschiebbar und skalierbar, ohne erforderliche Zusatzaddons.
+- **Automatische Sprache:** Oberfläche passend zur WoW-Clientsprache, verschiebbar und skalierbar, ohne erforderliche Zusatzaddons.
 
 Entwickelt für Interface **16001**. Letzter lokal geprüfter Installationsbuild: **1.60.1.70790**. Der aktuelle Stand ist eine erste, automatisch getestete Version; die Grenzen der Ingame-Prüfung stehen weiter unten.
 
@@ -22,6 +22,10 @@ Die Hauptanzeige enthält Level- und Sitzungszeit, aktuelle/benötigte/verbleibe
 Quest-XP stammen aus `GetQuestLogRewardXP(questID)` und werden nicht zusätzlich mit angenommenen Buffwerten multipliziert. Die Vorschau nutzt aktuelle Belohnungen und die 1–60-XP-Kurve; Abgabereihenfolge, veränderte Buffs oder bereits erreichte Level können spätere Belohnungen verändern. Noch nicht abgegebene XP zählen nicht zur gemessenen Rate.
 
 ## Benutzung
+
+**Version 0.2.0:** Die Oberfläche folgt automatisch der WoW-Textsprache. Verfügbar sind Deutsch, Englisch, Französisch, Spanisch, Italienisch, Portugiesisch, Russisch, Koreanisch sowie vereinfachtes und traditionelles Chinesisch. `enGB` nutzt die englischen, `esMX` die spanischen und `ptPT` die portugiesischen Texte. Unbekannte Sprachen und fehlende Übersetzungen fallen auf Englisch zurück. Nach einem Wechsel der WoW-Textsprache das Spiel entsprechend den Client-Vorgaben neu starten.
+
+**English:** The interface automatically follows your WoW client's text language. See the [English feature overview and CurseForge description](docs/CURSEFORGE.md). No additional addons or online translation services are required.
 
 Den Ordner `ForeverXPOptimizer` in den Addon-Ordner deines Forever-Clients kopieren:
 
@@ -41,6 +45,8 @@ Die Datei `ForeverXPOptimizer.toc` muss unmittelbar in diesem Ordner liegen. WoW
 - `/fxp level 14` zeigt die Quellenvorschau für eine Stufe; `/fxp live` kehrt zur aktuellen Stufe zurück.
 - `/fxp diagnose` zeigt Build, Interface und Lesbarkeit im Chat an und fragt `/played` neu an.
 - `/fxp quelle food` schaltet beispielsweise Essen um. Weitere Schlüssel: `sleep`, `rested`, `tent`, `pendant`, `legacy`.
+
+Die englischen Befehle `/fxp reset`, `/fxp sound`, `/fxp source food`, `/fxp status` und `/fxp help` funktionieren in jeder Sprache. Die bisherigen deutschen Befehle bleiben erhalten. Einstellungen und Levelhistorie werden beim Sprachwechsel nicht zurückgesetzt. Gegenstands- und Buffnamen werden nach Möglichkeit aus dem lokalisierten Client geladen; bis Daten verfügbar sind, erscheint eine Gegenstands-ID beziehungsweise ein englischer Quellenname.
 
 Das Fenster startet nach dem Login mit 15 Sekunden Schonfrist für Hinweise. Warnungen werden während Kampf, Tod, AFK und manueller Pause unterdrückt und danach neu bewertet. Beschaffungshinweise erscheinen einmal pro Zustandswechsel, reguläre Erinnerungen höchstens alle fünf Minuten. Die Grundvorwarnung beträgt 60 Sekunden.
 
@@ -80,6 +86,10 @@ python tools/run_tests.py
 
 Testwerkzeug: **Lupa 2.6**, Modul `lupa.lua51` (Lua 5.1). Formatter: **StyLua 2.6.0**, Konfiguration in `.stylua.toml`. Beide bleiben Entwicklungswerkzeuge in `.tools`; sie sind nicht Bestandteil der Addon-ZIP. Für dieses neue Projekt waren kein bestehender Linter, Typechecker oder Semgrep installiert. Lua-Dateien werden mit Lua 5.1 kompiliert; die relevanten Regeln und der tatsächliche Ereignis-/UI-Code laufen in den automatisierten Tests.
 
+Zusätzlich werden alle 141 Übersetzungsschlüssel auf Vollständigkeit geprüft. Der vollständige Client-/UI-Test läuft für die zehn Sprachen, drei regionale Aliasse und eine unbekannte Sprache. Geprüft werden auch sprachabhängige XP-Tooltips, Untoten-Erkennung, native Buffnamen, Zahlenformate und englische Befehlsaliasse. Das ersetzt keine Prüfung von Textlängen und Übersetzungen im tatsächlichen Spiel durch Muttersprachler.
+
+Neue Texte gehören in `ForeverXPOptimizer/Locales/enUS.lua` und die anderen Sprachdateien. `Locale.lua` wählt mit `GetLocale()` die Sprache; Englisch wird vor den jeweiligen Übersetzungen geladen und dient als Fallback.
+
 ## Paket und Installation
 
 ```powershell
@@ -87,6 +97,8 @@ powershell -ExecutionPolicy Bypass -File tools/deploy.ps1
 ```
 
 Das Skript prüft Produktkennung `wowf`, kopiert ausschließlich die Dateien dieses Addons, sichert eine vorhandene Installation unter `dist/backups` im Projekt und vergleicht anschließend SHA-256-Prüfsummen. Andere Addons und WoW-Einstellungen werden nicht verändert. Eine ZIP und ein Installationsbericht werden unter `dist` erzeugt.
+
+Aktuelles Upload-Paket: `dist/ForeverXPOptimizer-0.2.0.zip`. Es enthält direkt den Ordner `ForeverXPOptimizer` mit TOC, Lua-Dateien, allen Übersetzungen und dem Icon. Die Dateiversion wird aus der TOC abgeleitet. Für CurseForge wird dieses Paket hochgeladen, nicht das GitHub-Quellarchiv. Siehe [CHANGELOG.md](CHANGELOG.md).
 
 Technische Grundlage: die [Forever-API-Quelldokumentation](https://github.com/Gethe/wow-ui-source/tree/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated), insbesondere `UnitAuraDocumentation.lua`, `ItemDocumentation.lua`, `PlayerScriptDocumentation.lua` und `SecretPredicateAPIDocumentation.lua`.
 

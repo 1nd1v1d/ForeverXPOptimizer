@@ -1,4 +1,10 @@
 local ns = {}
+GetLocale = function()
+    return "deDE"
+end
+assert(loadfile(PROJECT_ROOT .. "/ForeverXPOptimizer/Locale.lua"))("ForeverXPOptimizer", ns)
+assert(loadfile(PROJECT_ROOT .. "/ForeverXPOptimizer/Locales/enUS.lua"))("ForeverXPOptimizer", ns)
+assert(loadfile(PROJECT_ROOT .. "/ForeverXPOptimizer/Locales/deDE.lua"))("ForeverXPOptimizer", ns)
 assert(loadfile(PROJECT_ROOT .. "/ForeverXPOptimizer/Data.lua"))("ForeverXPOptimizer", ns)
 assert(loadfile(PROJECT_ROOT .. "/ForeverXPOptimizer/Model.lua"))("ForeverXPOptimizer", ns)
 local M = ns.Model

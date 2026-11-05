@@ -1,4 +1,5 @@
 local _, ns = ...
+local L = ns.L
 local C, M = ns.Client, ns.Model
 local UI = {}
 ns.UI = UI
@@ -16,14 +17,14 @@ local colors = {
 }
 local labels = {
     active = "OK",
-    soon = "BALD",
-    partial = "TEIL",
-    missing = "FEHLT",
-    obtain = "OFFEN",
+    soon = L.TAG_SOON,
+    partial = L.TAG_PARTIAL,
+    missing = L.TAG_MISSING,
+    obtain = L.TAG_OBTAIN,
     cooldown = "CD",
     unknown = "?",
-    locked = "SPÄTER",
-    ignored = "AUS",
+    locked = L.TAG_LOCKED,
+    ignored = L.TAG_OFF,
     info = "INFO",
 }
 
@@ -65,16 +66,10 @@ function UI:Tooltip(row)
             GameTooltip:AddLine(food.count .. " × " .. food.name, 0.7, 1, 0.8, true)
         end
         if C.snapshot.foodUncertain then
-            GameTooltip:AddLine(
-                "Nach erneutem Verzehr eines bestätigten XP-Essens wird der neue Essensbuff zugeordnet.",
-                1,
-                0.8,
-                0.4,
-                true
-            )
+            GameTooltip:AddLine(L.FOOD_LEARN, 1, 0.8, 0.4, true)
         end
     end
-    GameTooltip:AddLine("Häkchen: Quelle ein/aus. Rechtsklick: Details.", 0.6, 0.65, 0.7, true)
+    GameTooltip:AddLine(L.ROW_HELP, 0.6, 0.65, 0.7, true)
     GameTooltip:Show()
 end
 
@@ -94,18 +89,12 @@ function UI:QuestTooltip()
         return
     end
     GameTooltip:SetOwner(self.bar, "ANCHOR_TOP")
-    GameTooltip:AddLine("XP bei sofortiger Questabgabe", 1, 0.78, 0.3)
-    GameTooltip:AddLine(
-        "Lila: aktuelle XP · Gold: abgabefertige Quests · Blau: Erholung",
-        0.85,
-        0.85,
-        0.9,
-        true
-    )
+    GameTooltip:AddLine(L.QUEST_TOOLTIP, 1, 0.78, 0.3)
+    GameTooltip:AddLine(L.BAR_LEGEND, 0.85, 0.85, 0.9, true)
     for _, quest in ipairs(q.rows) do
         GameTooltip:AddDoubleLine(
             quest.title,
-            quest.xp and M.Number(quest.xp) .. " XP" or "unbekannt",
+            quest.xp and M.Number(quest.xp) .. " XP" or L.UNKNOWN,
             1,
             1,
             1,
@@ -115,30 +104,12 @@ function UI:QuestTooltip()
         )
     end
     if q.unavailable then
-        GameTooltip:AddLine("Questdaten derzeit nicht verfügbar.", 1, 0.6, 0.4, true)
+        GameTooltip:AddLine(L.QUEST_UNAVAILABLE, 1, 0.6, 0.4, true)
     elseif q.unknown > 0 then
-        GameTooltip:AddLine(
-            q.unknown .. " Einträge unvollständig; die Summe ist eine Untergrenze.",
-            1,
-            0.6,
-            0.4,
-            true
-        )
+        GameTooltip:AddLine(q.unknown .. L.QUEST_LOWER_BOUND, 1, 0.6, 0.4, true)
     end
-    GameTooltip:AddLine(
-        "Vorschau mit aktuellen Client-Belohnungen. Abgabereihenfolge, neue Buffs und Levelwechsel können spätere Belohnungen verändern.",
-        0.7,
-        0.75,
-        0.8,
-        true
-    )
-    GameTooltip:AddLine(
-        "Quest-XP zählen erst nach tatsächlicher Abgabe zur XP/Stunde-Messung.",
-        0.7,
-        0.75,
-        0.8,
-        true
-    )
+    GameTooltip:AddLine(L.QUEST_CAVEAT, 0.7, 0.75, 0.8, true)
+    GameTooltip:AddLine(L.QUEST_RATE_NOTE, 0.7, 0.75, 0.8, true)
     GameTooltip:Show()
 end
 
@@ -243,10 +214,10 @@ function UI:Create()
         end)
     end
     self.summary = label(f, 196, -102, 330)
-    self.pauseButton = button(f, "Pause", 538, -96, 65, function()
+    self.pauseButton = button(f, L.PAUSE, 538, -96, 65, function()
         C:Command("pause")
     end)
-    self.detailsButton = button(f, "Details", 609, -96, 70, function()
+    self.detailsButton = button(f, L.DETAILS, 609, -96, 70, function()
         self:ToggleDetails()
     end)
     button(f, "×", 685, -96, 63, function()
@@ -282,10 +253,10 @@ function UI:Create()
             GameTooltip:Hide()
         end)
     end
-    button(self.detail, "Neue Sitzung", 0, -230, 110, function()
+    button(self.detail, L.NEW_SESSION, 0, -230, 110, function()
         C:Command("neu")
     end)
-    self.soundButton = button(self.detail, "Ton aus", 117, -230, 85, function()
+    self.soundButton = button(self.detail, L.SOUND_OFF, 117, -230, 85, function()
         C:Command("ton")
     end)
     button(self.detail, "<", 230, -230, 28, function()
@@ -296,7 +267,7 @@ function UI:Create()
         self.preview = math.min(60, (self.preview or C.tracker.level) + 1)
         self:RenderDetails()
     end)
-    button(self.detail, "Live-Stufe", 298, -230, 90, function()
+    button(self.detail, L.LIVE_LEVEL, 298, -230, 90, function()
         self.preview = nil
         self:RenderDetails()
     end)
@@ -322,7 +293,7 @@ function UI:Layout()
     self.frame:SetHeight(height)
     self.detail:SetShown(C.options.expanded)
     self.scroll:SetHeight(math.max(100, height - 425))
-    self.detailsButton:SetText(C.options.expanded and "Weniger" or "Details")
+    self.detailsButton:SetText(C.options.expanded and L.LESS or L.DETAILS)
 end
 function UI:ToggleDetails()
     C.options.expanded = not C.options.expanded
@@ -353,11 +324,9 @@ function UI:Render()
     local eta, played = t:ETA(rate), db.played
     local fraction = t.maximum > 0 and math.min(1, t.xp / t.maximum) or 1
     local projection = M.ProjectQuests(t.level, t.xp, t.maximum, q.xp)
-    self.levelTime:SetText(
-        "Zeit auf diesem Level: " .. M.Duration(played and played.level or db.current.online)
-    )
+    self.levelTime:SetText(L.LEVEL_TIME .. M.Duration(played and played.level or db.current.online))
     self.sessionTime:SetText(
-        "Zeit dieser Sitzung: " .. M.Duration(db.session.online) .. " · AFK " .. M.Duration(db.session.afk)
+        L.SESSION_TIME .. M.Duration(db.session.online) .. L.AFK_SHORT .. M.Duration(db.session.afk)
     )
     segment(self.fill, 0, fraction)
     segment(
@@ -366,7 +335,7 @@ function UI:Render()
         math.min(1 - fraction, t.maximum > 0 and (C.snapshot.rested or 0) / t.maximum or 0)
     )
     segment(self.questFill, fraction, math.min(1 - fraction, t.maximum > 0 and q.xp / t.maximum or 0))
-    self.levelLabel:SetText("Level " .. t.level)
+    self.levelLabel:SetText(L.LEVEL_PREFIX .. t.level)
     self.xpLabel:SetText(
         M.Number(t.xp)
             .. " / "
@@ -376,34 +345,34 @@ function UI:Render()
             .. ")"
     )
     local after = projection.levels > 0
-            and ("→ L" .. projection.level .. " · " .. string.format("%.1f", projection.percent) .. " %")
-        or ("(" .. string.format("%.1f", projection.percent) .. " %)")
-    self.percentLabel:SetText(string.format("%.1f %%  %s", fraction * 100, after))
-    local estimate = t.level >= 60 and "Maximalstufe erreicht"
-        or (eta and "Levelaufstieg in: " .. M.Duration(eta) or "Levelaufstieg: Daten werden gesammelt")
+            and ("→ L" .. projection.level .. " · " .. M.Decimal(projection.percent) .. " %")
+        or ("(" .. M.Decimal(projection.percent) .. " %)")
+    self.percentLabel:SetText(M.Decimal(fraction * 100) .. " %  " .. after)
+    local estimate = t.level >= 60 and L.MAX_LEVEL
+        or (eta and L.ETA_PREFIX .. M.Duration(eta) or L.ETA_COLLECT)
     if rate == 0 and t.level < 60 then
-        estimate = "Levelaufstieg: keine XP im Messfenster"
+        estimate = L.ETA_EMPTY
     end
     if t.mode ~= "active" then
-        estimate = estimate .. " · pausiert"
+        estimate = estimate .. L.PAUSED_SUFFIX
     end
-    self.estimate:SetText(estimate .. " (" .. M.Number(rate) .. " XP/h aktiv)")
+    self.estimate:SetText(estimate .. " (" .. M.Number(rate) .. L.ACTIVE_RATE_SUFFIX)
     local restPercent = t.maximum > 0 and (C.snapshot.rested or 0) / t.maximum * 100 or 0
     self.restLabel:SetText(
-        "Erholt: " .. (C.snapshot.rested and string.format("%.1f %%", restPercent) or "unbekannt")
+        L.RESTED_PREFIX .. (C.snapshot.rested and (M.Decimal(restPercent) .. " %") or L.UNKNOWN)
     )
     if q.unavailable then
-        self.questLabel:SetText("Abgabefertige Quests: XP-Daten nicht verfügbar")
+        self.questLabel:SetText(L.QUEST_XP_UNAVAILABLE)
     else
         self.questLabel:SetText(
             string.format(
-                "Abgabefertig: %d Quests · %s%s XP  →  Level %d · %.1f %%%s",
+                L.QUEST_PREVIEW,
                 q.count,
                 q.unknown > 0 and "≥ " or "",
                 M.Number(q.xp),
                 projection.level,
-                projection.percent,
-                q.unknown > 0 and " · Daten unvollständig" or ""
+                M.Decimal(projection.percent),
+                q.unknown > 0 and L.INCOMPLETE_SUFFIX or ""
             )
         )
     end
@@ -425,31 +394,25 @@ function UI:Render()
         row.check:SetChecked(C.options.enabled[state.key] ~= false)
         row.state:SetText("|cff" .. color .. state.text .. "|r")
     end
-    self.summary:SetText(
-        C.diagnostic.xp
-            or (
-                C.snapshot.auraReadable and "Buffs: Symbole berühren für Details"
-                or "Buffdaten eingeschränkt · keine Fehlwarnung"
-            )
-    )
+    self.summary:SetText(C.diagnostic.xp or (C.snapshot.auraReadable and L.BUFF_HOVER or L.BUFF_RESTRICTED))
     local s = db.session
     self.metrics:SetText(
-        "Gesamt /played: "
-            .. (played and M.Duration(played.total) or "wird angefragt …")
-            .. "   ·   Sitzung aktiv: "
+        L.PLAYED_TOTAL
+            .. (played and M.Duration(played.total) or L.REQUESTING)
+            .. L.SESSION_ACTIVE
             .. M.Duration(s.active)
-            .. "   ·   AFK: "
+            .. L.AFK_METRIC
             .. M.Duration(s.afk)
-            .. "   ·   Pause: "
+            .. L.PAUSE_METRIC
             .. M.Duration(s.paused)
-            .. "\nSitzungs-XP: "
+            .. L.SESSION_XP
             .. M.Number(s.xp)
-            .. "   ·   XP/h aktiv (Sitzung): "
+            .. L.SESSION_RATE
             .. M.Number(s.active > 0 and s.xp * 3600 / s.active or nil)
-            .. "\nPrognose in aktiver Spielzeit; aktuelles Fenster: letzte 15 aktive Minuten."
+            .. L.RATE_NOTE
     )
-    self.pauseButton:SetText(C.manualPause and "Weiter" or "Pause")
-    self.soundButton:SetText(C.options.sound and "Ton an" or "Ton aus")
+    self.pauseButton:SetText(C.manualPause and L.RESUME or L.PAUSE)
+    self.soundButton:SetText(C.options.sound and L.SOUND_ON or L.SOUND_OFF)
     self:Layout()
     if C.options.expanded then
         self:RenderDetails()
@@ -461,43 +424,41 @@ function UI:RenderDetails()
         return
     end
     local level = self.preview or C.tracker.level
-    self.previewLabel:SetText("Quellen für Stufe " .. level)
+    self.previewLabel:SetText(L.SOURCES_LEVEL .. level)
     local lines = {
-        "|cff58d8b0Erreichbare Quellen|r",
-        "Vorschau prüft Stufenfreigaben. Besitz und Freischaltungen bleiben charakterabhängig.",
+        L.SOURCES_HEADING,
+        L.PREVIEW_NOTE,
     }
     for _, source in ipairs(ns.sources) do
         if level < source.minLevel then
-            lines[#lines + 1] = "|cff737b8a" .. source.name .. ": ab Stufe " .. source.minLevel .. "|r"
+            lines[#lines + 1] = "|cff737b8a" .. source.name .. L.FROM_LEVEL_SUFFIX .. source.minLevel .. "|r"
         elseif level >= 60 then
-            lines[#lines + 1] = source.name .. ": normale Levelphase beendet"
+            lines[#lines + 1] = source.name .. L.LEVELING_OVER
         else
             lines[#lines + 1] = "|cffe4c480" .. source.name .. "|r – " .. source.obtain
         end
     end
-    lines[#lines + 1] = "\n|cff58d8b0Geeignete Speisen für Stufe " .. level .. "|r"
+    lines[#lines + 1] = L.FOODS_LEVEL .. level .. "|r"
     for _, food in ipairs(ns.foods) do
         if level >= food.level then
-            lines[#lines + 1] = C:ItemName(food.id) .. " · ab " .. food.level .. " · ID " .. food.id
+            lines[#lines + 1] = C:ItemName(food.id) .. L.ITEM_LEVEL .. food.level .. " · ID " .. food.id
         end
     end
-    lines[#lines + 1] =
-        "Weitere Speisen werden anhand des XP-Hinweises im aktuellen Gegenstandstooltip erkannt. Studentenfutter zählt nicht als XP-Buff."
-    lines[#lines + 1] = "\n|cff58d8b0Levelverlauf|r"
-    lines[#lines + 1] = "Stufe → nächste: Onlinezeit / gemessen AFK / gemessen aktiv / XP je aktive Stunde"
-    lines[#lines + 1] = "\n|cff58d8b0Abgabefertige Quests|r"
+    lines[#lines + 1] = L.FOOD_CATALOG_NOTE
+    lines[#lines + 1] = L.HISTORY_HEADING
+    lines[#lines + 1] = L.HISTORY_COLUMNS
+    lines[#lines + 1] = L.READY_HEADING
     for _, quest in ipairs(C.quests and C.quests.rows or {}) do
         lines[#lines + 1] = quest.title .. " – " .. M.Number(quest.xp) .. " XP"
     end
-    lines[#lines + 1] =
-        "Vorschau nutzt aktuelle Belohnungen. Reihenfolge, Buffs und Levelwechsel können spätere Belohnungen verändern."
+    lines[#lines + 1] = L.QUEST_PREVIEW_NOTE
     local found = false
     for l = 1, 59 do
         local row = C.character.history[l]
         if row then
             found = true
             if row.skipped then
-                lines[#lines + 1] = l .. " → " .. l + 1 .. ": während eines XP-Ereignisses übersprungen"
+                lines[#lines + 1] = l .. " → " .. l + 1 .. L.SKIPPED_LEVEL
             else
                 local rate = row.active > 0 and row.xp * 3600 / row.active or nil
                 lines[#lines + 1] = string.format(
@@ -508,37 +469,34 @@ function UI:RenderDetails()
                     M.Duration(row.afk),
                     M.Duration(row.active),
                     M.Number(rate),
-                    row.partial and " · Teilaufzeichnung" or ""
+                    row.partial and L.PARTIAL_SUFFIX or ""
                 )
             end
         end
     end
     if not found then
-        lines[#lines + 1] = "Noch kein aufgezeichneter Stufenaufstieg."
+        lines[#lines + 1] = L.NO_HISTORY
     end
     local current, totals = C.character.current, C.character.totals
-    lines[#lines + 1] = "Aktuelle Stufe erfasst: aktiv "
+    lines[#lines + 1] = L.CURRENT_ACTIVE
         .. M.Duration(current.active)
-        .. ", AFK "
+        .. L.AFK_INLINE
         .. M.Duration(current.afk)
-        .. ", pausiert "
+        .. L.PAUSED_INLINE
         .. M.Duration(current.paused)
-        .. (current.partial and " · Teilaufzeichnung" or "")
-    lines[#lines + 1] = "Seit Aufzeichnung: online "
+        .. (current.partial and L.PARTIAL_SUFFIX or "")
+    lines[#lines + 1] = L.SINCE_ONLINE
         .. M.Duration(totals.online)
-        .. ", AFK "
+        .. L.AFK_INLINE
         .. M.Duration(totals.afk)
-        .. ", aktiv "
+        .. L.ACTIVE_INLINE
         .. M.Duration(totals.active)
-        .. ", pausiert "
+        .. L.PAUSED_INLINE
         .. M.Duration(totals.paused)
-    lines[#lines + 1] =
-        "Frühere AFK-Zeit und abgeschlossene Level sind nachträglich nicht rekonstruierbar. AFK bedeutet den vom Spiel gemeldeten AFK-Status."
-    lines[#lines + 1] = "\n|cff58d8b0Einstellungen|r"
-    lines[#lines + 1] =
-        "/fxp warn 60 · Vorwarnung in Sekunden\n/fxp scale 1 · Größe 0,65–1,6\n/fxp diagnose · Lesbarkeit und Build im Chat\n/fxp position · Fenster zurücksetzen"
-    lines[#lines + 1] =
-        "Stand 05.11.2026. Schlafsack-Dauer aus der tatsächlichen Aura. Legacy-Ränge und unbekannte Events werden nicht als fehlender zeitlicher Buff behauptet."
+    lines[#lines + 1] = L.HISTORY_NOTE
+    lines[#lines + 1] = L.SETTINGS_HEADING
+    lines[#lines + 1] = L.SETTINGS_HELP
+    lines[#lines + 1] = L.LIMITS_NOTE
     self.detailText:SetText(table.concat(lines, "\n"))
     self.detailChild:SetHeight(self.detailText:GetStringHeight() + 10)
 end

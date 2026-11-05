@@ -1,4 +1,5 @@
 local _, ns = ...
+local L = ns.L
 local M = {}
 ns.Model = M
 
@@ -222,13 +223,29 @@ function M.Number(value)
     end
     local text = tostring(math.floor(value + 0.5))
     local formatted = text:reverse():gsub("(%d%d%d)", "%1."):reverse():gsub("^%.", "")
-    return formatted
+    return (formatted:gsub("%.", ns.groupSeparator))
+end
+
+function M.Decimal(value)
+    return (string.format("%.1f", value):gsub("%.", ns.decimalSeparator))
 end
 
 function M.HasXPText(text)
-    text = string.lower(text or "")
-    return text:find("5%s*%%") ~= nil
-        and (text:find("experience", 1, true) ~= nil or text:find("erfahrung", 1, true) ~= nil)
+    -- Lua 5.1's byte-oriented lower() can corrupt UTF-8 on some host locales.
+    text = (text or ""):gsub("[A-Z]", function(c)
+        return string.char(c:byte() + 32)
+    end)
+    text = text:gsub("É", "é"):gsub("Ê", "ê"):gsub("È", "è")
+    text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("\194\160", " "):gsub("％", "%%")
+    if not (text:match("^5%s*%%") or text:find("[^%d%.,]5%s*%%")) then
+        return false
+    end
+    for _, word in ipairs(ns.xpWords) do
+        if text:find(word, 1, true) then
+            return true
+        end
+    end
+    return false
 end
 
 function M.FoodAura(aura, learned)
@@ -242,10 +259,10 @@ function M.SourceState(source, s, options)
         return state
     end
     if options.enabled[source.key] == false then
-        return set("ignored", "Abgeschaltet")
+        return set("ignored", L.DISABLED)
     end
     if s.level >= 60 then
-        return set("info", "Maximalstufe erreicht")
+        return set("info", L.MAX_LEVEL)
     end
     local aura = s.auras[source.key]
     if aura then
@@ -253,95 +270,91 @@ function M.SourceState(source, s, options)
         state.stacks = aura.stacks
         local time = state.remaining and (" · " .. M.Duration(state.remaining)) or ""
         if source.key == "sleep" and (aura.stacks or 1) < 3 then
-            return set(
-                "partial",
-                string.format("%d/3 Stapel%s", aura.stacks or 1, time),
-                s.sleepCooldown == 0
-            )
+            return set("partial", string.format(L.STACKS_FMT, aura.stacks or 1, time), s.sleepCooldown == 0)
         end
         if state.remaining and state.remaining <= options.warning then
-            return set("soon", "Läuft aus" .. time, false)
+            return set("soon", L.EXPIRING .. time, false)
         end
-        return set("active", (source.key == "sleep" and "3/3 aktiv" or "Aktiv") .. time)
+        return set("active", (source.key == "sleep" and L.FULL_STACKS or L.ACTIVE) .. time)
     end
     if s.level < source.minLevel then
-        return set("locked", "Ab Stufe " .. source.minLevel)
+        return set("locked", L.FROM_LEVEL .. source.minLevel)
     end
     if source.key == "rested" then
         if s.rested == nil then
-            return set("unknown", "Vorrat nicht lesbar")
+            return set("unknown", L.RESERVE_UNKNOWN)
         end
         if s.rested > 0 then
-            return set("active", M.Number(s.rested) .. " XP Vorrat")
+            return set("active", M.Number(s.rested) .. L.XP_RESERVE)
         end
-        return set("missing", "Vorrat aufgebraucht", false)
+        return set("missing", L.RESERVE_EMPTY, false)
     elseif source.key == "tent" then
         if s.rested == nil then
-            return set("unknown", "Erholung nicht lesbar")
+            return set("unknown", L.REST_UNKNOWN)
         end
         if s.rested >= s.maximum * 0.05 then
-            return set("active", "Erholung bereits ≥ 5 %")
+            return set("active", L.REST_ENOUGH)
         end
         if s.tentLock then
-            return set("cooldown", "Bezug gesperrt · " .. M.Duration(s.tentLock))
+            return set("cooldown", L.BENEFIT_LOCK .. M.Duration(s.tentLock))
         end
         if s.tentResting then
-            return set("info", "Am Zelt ruhen …")
+            return set("info", L.REST_AT_TENT)
         end
         if s.tentCooldown and s.tentCooldown > 0 then
-            return set("cooldown", "Aufstellen · " .. M.Duration(s.tentCooldown))
+            return set("cooldown", L.PLACEMENT .. M.Duration(s.tentCooldown))
         end
         if s.tentOwned and s.leatherworking then
             if s.tentCooldown == nil then
-                return set("unknown", "Aufstellabklingzeit nicht lesbar")
+                return set("unknown", L.PLACEMENT_UNKNOWN)
             end
-            return set("missing", "Zelt aufstellbar · Bezug prüfen", true)
+            return set("missing", L.TENT_READY, true)
         end
-        return set("obtain", "Wenig Erholung · fremdes Zelt nutzen")
+        return set("obtain", L.FIND_TENT)
     elseif source.key == "legacy" then
-        return set("info", "Erholung / Essensdauer · Menü Y prüfen")
+        return set("info", L.LEGACY_STATUS)
     end
     if not s.auraReadable then
-        return set("unknown", "Buffdaten aktuell eingeschränkt")
+        return set("unknown", L.AURAS_RESTRICTED)
     end
     if source.key == "food" then
         if s.foodUncertain then
-            return set("unknown", "Essensbuff: XP-Zuordnung ungeprüft")
+            return set("unknown", L.FOOD_UNVERIFIED)
         end
         if s.eating then
-            return set("info", "Essen läuft · 10 Sekunden abwarten")
+            return set("info", L.EATING)
         end
         if s.foodCount > 0 then
-            return set("missing", "Fehlt · " .. s.foodCount .. " Portionen", true)
+            return set("missing", L.MISSING_PREFIX .. s.foodCount .. L.PORTIONS, true)
         end
-        return set("obtain", "Fehlt · XP-Essen besorgen", true)
+        return set("obtain", L.GET_FOOD, true)
     elseif source.key == "sleep" then
         if s.sleepOwned then
             if s.sleepCooldown == nil then
-                return set("unknown", "Gegenstandsabklingzeit unbekannt")
+                return set("unknown", L.ITEM_CD_UNKNOWN)
             end
             if s.sleepCooldown > 0 then
-                return set("cooldown", "Fehlt · bereit in " .. M.Duration(s.sleepCooldown))
+                return set("cooldown", L.MISSING_READY_IN .. M.Duration(s.sleepCooldown))
             end
-            return set("missing", "Fehlt · Schlafsack bereit", true)
+            return set("missing", L.SLEEP_READY, true)
         end
-        return set("obtain", "Questreihe / Gruppenschlafsack", true)
+        return set("obtain", L.GET_SLEEP, true)
     elseif source.key == "pendant" then
         if not s.pendantOwned then
-            return set("obtain", "Optional · Anhänger besorgen", true)
+            return set("obtain", L.GET_PENDANT, true)
         end
         if not s.undeadTarget then
-            return set("info", "Bereit für Untotenkills")
+            return set("info", L.UNDEAD_READY)
         end
         if s.pendantCooldown == nil then
-            return set("unknown", "Abklingzeit unbekannt")
+            return set("unknown", L.CD_UNKNOWN)
         end
         if s.pendantCooldown > 0 then
-            return set("cooldown", "Bereit in " .. M.Duration(s.pendantCooldown))
+            return set("cooldown", L.READY_IN .. M.Duration(s.pendantCooldown))
         end
-        return set("missing", "Untoter im Ziel · Bonus nutzen", true)
+        return set("missing", L.USE_UNDEAD, true)
     end
-    return set("unknown", "Status unbekannt")
+    return set("unknown", L.STATUS_UNKNOWN)
 end
 
 -- Warning state is only advanced after suppression ends, so combat/AFK/death
@@ -353,13 +366,13 @@ function M.Warning(state, memory, now, options, suppressed)
     local previous = memory[state.key]
     local reason
     if state.kind == "soon" then
-        reason = "Läuft bald aus"
+        reason = L.WARN_SOON
     elseif state.kind == "partial" and state.actionable then
-        reason = "Stapel unvollständig"
+        reason = L.WARN_STACKS
     elseif state.kind == "missing" and (state.actionable or (previous and previous.active)) then
-        reason = "Bonus fehlt"
+        reason = L.WARN_MISSING
     elseif state.kind == "obtain" and state.actionable then
-        reason = "Verfügbaren Bonus freischalten"
+        reason = L.WARN_UNLOCK
     end
     local active = state.kind == "active" or state.kind == "soon" or state.kind == "partial"
     if not previous then
